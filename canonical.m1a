@@ -14,7 +14,7 @@ source movies is _movies def (
     ) | select (
       where genres.value != x.value
       group_by genre1 is genres.value
-      aggregate  title_count
+      aggregate title_count
       nest genre is select (
         group_by genre1 is genres.value genre2 is x.value
         nest by_title_list is select (
