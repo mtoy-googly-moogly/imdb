@@ -1,9 +1,6 @@
 // Refining the source of a query, from imdb
-source: _movies is duckdb.table('data/titles.parquet') def {
-  primary_key: tconst
-}
+source: _movies is duckdb.table('data/titles.parquet') def { primary_key: tconst }
 source: movies is _movies def {
-
   measure:
     title_count is count(distinct tconst)
     total_ratings is sum(ratings.numVotes/1000.0)
