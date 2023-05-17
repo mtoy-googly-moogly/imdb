@@ -34,13 +34,16 @@ source: names_table is table('duckdb:data/usa_names.parquet') {
   measure: population is `number`.sum()
   dimension: decade is floor(`year`/10)*10
 
-  query: show_pop is { aggregate: population }
-  query: by_name is show_pop { group_by: name limit: 10 }
-  query: by_state is show_pop { group_by: state }
-  query: by_gender is show_pop { group_by: gender }
-  query: by_decade is show_pop { group_by: decade; order_by: population asc }
+  query: by_name is { group_by: name aggregate: population limit: 10 }
+  query: by_state is { group_by: state aggregate: population }
+  query: by_gender is { group_by: gender aggregate: population }
+  query: by_decade is {
+    group_by: decade
+    aggregate: population
+    order_by: 1 asc
+  }
   query: name_as_pct_of_pop is
-    show_pop { nest: by_name }
+    { nest: by_name aggregate: population }
     -> {
       project:
         by_name.*,

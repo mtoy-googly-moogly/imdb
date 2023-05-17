@@ -32,13 +32,16 @@ source names_table is duckdb('data/usa_names.parquet') def (
   measure population is `number`.sum()
   dimension decade is floor(`year`/10)*10
 
-  query show_pop is select ( aggregate population )
-  query by_name is show_pop mod ( group_by name limit 10 )
-  query by_state is show_pop mod ( group_by state )
-  query by_gender is show_pop mod ( group_by gender )
-  query by_decade is show_pop mod ( group_by decade; order_by population asc )
+  query by_name is select ( group_by name; aggregate population; limit 10 )
+  query by_state is select ( group_by state; aggregate population )
+  query by_gender is select ( group_by gender; aggregate population )
+  query by_decade is select (
+    group_by decade
+    aggregate population
+    order_by 1 asc
+  )
   query name_as_pct_of_pop is
-    show_pop mod ( nest by_name )
+    select ( nest by_name; aggregate population )
     | project (
       cols
         by_name.*,
