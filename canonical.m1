@@ -18,7 +18,7 @@ source: movies is duckdb.table('data/titles.parquet') def {
       aggregate:  title_count
       nest: genre is select {
         group_by: genre1 is genres.value genre2 is x.value
-        nest: by_title_list is {
+        nest: by_title_list is select {
           group_by: primaryTitle, ratings.numVotes
           order_by: 2 desc
           limit: 10
@@ -30,7 +30,7 @@ source: movies is duckdb.table('data/titles.parquet') def {
 run: movies -> genre_matrix
 
 // names ----------------------------------------------
-source: names_table is duckdb.table('data/usa_names.parquet') {
+source: names_table is duckdb.table('data/usa_names.parquet') def {
   measure: population is `number`.sum()
   dimension: decade is floor(`year`/10)*10
 
