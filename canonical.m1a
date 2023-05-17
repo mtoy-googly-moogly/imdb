@@ -1,7 +1,6 @@
 // Refining the source of a query, from imdb
-source movies is duckdb('data/titles.parquet') def (
-  primary_key tconst
-
+source _movies is duckdb('data/titles.parquet') def ( primary_key tconst )
+source movies is _movies def (
   measure
     title_count is count(distinct tconst)
     total_ratings is sum(ratings.numVotes/1000.0)
@@ -10,9 +9,9 @@ source movies is duckdb('data/titles.parquet') def (
   query genre matrix is
     def (
       join_many x
-        is movies -> select ( group_by tconst, genres.value )
+        is _movies -> select ( group_by tconst, genres.value )
         on tconst = x.tconst
-    ) |  select (
+    ) | select (
       where genres.value != x.value
       group_by genre1 is genres.value
       aggregate  title_count
