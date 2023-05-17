@@ -65,4 +65,4 @@ source: names_table is duckdb.table('data/usa_names.parquet') def {
   }
 }
 
-run: j_names is names_table -> name_dashboard mod {? name ~ r'J'}
+query: j_names is names_table -> name_dashboard mod {? name ~ r'J'}
