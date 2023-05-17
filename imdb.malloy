@@ -1,86 +1,86 @@
 // Information courtesy of IMDb (https://www.imdb.com).
-// Used with permission. 
+// Used with permission.
 // For personal / educational use only
 //
 //  Github: https://github.com/lloydtabb/imdb_fiddle
 //  About Fiddles: https://github.com/lloydtabb/malloy_fiddle_dist/
 
 
-source: people is table('duckdb:data/names.parquet') {
+source: people is duckdb.table('data/names.parquet') {
 // cast, crew, everyone involved in movies
   primary_key: nconst
 }
 
-source: principals is table('duckdb:data/principals.parquet') {
+source: principals is duckdb.table('data/principals.parquet') {
 // a mapping table that links people to movies, along with their job on that movie.
   join_one: people is people on nconst = people.nconst
 }
 
-source: movies is table('duckdb:data/titles.parquet') + {
+source: movies is duckdb.table('data/titles.parquet') + {
 // all the movies
   join_many: principals on tconst = principals.tconst
   primary_key: tconst
 
-  declare:
+  measure:
     title_count is count(distinct tconst)
     row_count is count()
     total_ratings is sum(ratings.numVotes/1000.0)
     average_rating is ratings.averageRating.avg()
     percent_of_titles is title_count/all(title_count)* 100
 
+  dimension:
     movie_image is concat('https://artifacts.flyxit.com/flyx-artifacts/',tconst,'.jpg')
     movie_url is concat('https://www.imdb.com/title/',tconst)
 
-
-  query: by_title is {
+  query: by_title is select {
     group_by: primaryTitle, startYear, ratings.numVotes
     order_by: 3 desc
   }
-  query: by_year is {
+  query: by_year is select {
     group_by: startYear
     aggregate: title_count
     order_by: startYear desc
   }
 
-  query: by_name is {
+  query: by_name is select {
     group_by:
       principals.people.primaryName, principals.nconst
     aggregate:
       total_ratings
       title_count
   }
-  query: by_job_category is {
+  query: by_job_category is select {
     group_by: job_category is principals.category
     aggregate: title_count
   }
 
-  query: by_genre is {
+  query: by_genre is select {
     group_by: genre is genres.value
-    aggregate: 
-      title_count, 
+    aggregate:
+      title_count,
       total_ratings
       percent_of_titles is title_count/all(title_count)* 100
 
   }
-  query: by_character is {
+  query: by_character is select {
     group_by: principals.characters.value
     aggregate: title_count
   }
 
-  query: by_year_and_genre is by_year + {
+  query: by_year_and_genre is by_year mod {
     nest: by_genre
   }
 
-  query: titles_dashboard is {
-    group_by: 
+  query: titles_dashboard is select {
+    group_by:
       movie_image
       production_year is startYear
       primaryTitle
       runtimeMinutes
-      movie_url 
+      movie_url
     nest:
       genre_list is by_genre
-      by_cast is by_job_category {
+      by_cast is by_job_category mod {
         nest: by_name_list is by_name + {limit: 200}
       }
     limit: 20
