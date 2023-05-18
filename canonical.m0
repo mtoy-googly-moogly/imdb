@@ -1,35 +1,37 @@
-// Refining the source of a query, from imdb
-source: movies is table('duckdb:data/titles.parquet') + {
+// imdb genre_matrix --------------------------------------------------------
+source: _movies is table('duckdb:data/titles.parquet')
+source: movies is _movies + {
   primary_key: tconst
 
   measure:
     title_count is count(distinct tconst)
     total_ratings is sum(ratings.numVotes/1000.0)
     percent_of_titles is title_count/all(title_count)* 100
-}
 
-query: movies + {
-  join_many: x is from( movies-> {
-    group_by: tconst, genres.value
-  } ) on tconst = x.tconst
-}
-->  {
-  where: genres.value != x.value
-  group_by: genre1 is genres.value
-  aggregate:  title_count
-  nest: genre is {
-    group_by:
-      genre1 is genres.value
-      genre2 is x.value
-    nest: by_title_list is {
-      group_by: primaryTitle, ratings.numVotes
-      order_by: 2 desc
-      limit: 10
+  query: genre_matrix is -> {
+    join_many: x
+      is from( _movies-> { group_by: tconst, genres.value } )
+      on tconst = x.tconst
+    where: genres.value != x.value
+
+    group_by: genre1 is genres.value
+    aggregate:  title_count
+    nest: genre is {
+      group_by:
+        genre1 is genres.value
+        genre2 is x.value
+      nest: by_title_list is {
+        group_by: primaryTitle, ratings.numVotes
+        order_by: 2 desc
+        limit: 10
+      }
     }
   }
 }
 
-// names ------------------------------------------------------------
+query: moves->genre_matrix
+
+// names names_dashboard ----------------------------------------------------
 source: names_table is table('duckdb:data/usa_names.parquet') {
   measure: population is `number`.sum()
   dimension: decade is floor(`year`/10)*10
